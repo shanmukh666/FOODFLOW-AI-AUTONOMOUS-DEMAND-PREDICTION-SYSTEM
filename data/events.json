@@ -1,0 +1,337 @@
+{
+  "2024-07-04": {
+    "type": "holiday",
+    "name": "July 4th",
+    "lift": 0.5
+  },
+  "2024-11-28": {
+    "type": "holiday",
+    "name": "Thanksgiving",
+    "lift": -0.3
+  },
+  "2024-12-25": {
+    "type": "holiday",
+    "name": "Christmas",
+    "lift": -0.5
+  },
+  "2024-12-31": {
+    "type": "holiday",
+    "name": "NYE",
+    "lift": 1.1
+  },
+  "2025-01-01": {
+    "type": "holiday",
+    "name": "New Year",
+    "lift": 0.6
+  },
+  "2025-02-14": {
+    "type": "holiday",
+    "name": "Valentine's",
+    "lift": 0.8
+  },
+  "2025-07-04": {
+    "type": "concert",
+    "name": "Local event",
+    "lift": 0.6308032058431998
+  },
+  "2025-11-28": {
+    "type": "holiday",
+    "name": "Thanksgiving",
+    "lift": -0.3
+  },
+  "2025-12-25": {
+    "type": "holiday",
+    "name": "Christmas",
+    "lift": -0.5
+  },
+  "2025-12-31": {
+    "type": "holiday",
+    "name": "NYE",
+    "lift": 1.1
+  },
+  "2026-01-01": {
+    "type": "holiday",
+    "name": "New Year",
+    "lift": 0.6
+  },
+  "2026-02-14": {
+    "type": "concert",
+    "name": "Local event",
+    "lift": 0.5592375721126066
+  },
+  "2024-06-01": {
+    "type": "concert",
+    "name": "Local event",
+    "lift": 0.5982700002641199
+  },
+  "2024-06-07": {
+    "type": "concert",
+    "name": "Local event",
+    "lift": 0.6097671337795132
+  },
+  "2024-06-14": {
+    "type": "concert",
+    "name": "Local event",
+    "lift": 0.3318022252369481
+  },
+  "2024-07-13": {
+    "type": "concert",
+    "name": "Local event",
+    "lift": 0.4304650568014264
+  },
+  "2024-07-19": {
+    "type": "concert",
+    "name": "Local event",
+    "lift": 0.45730005376026667
+  },
+  "2024-08-03": {
+    "type": "concert",
+    "name": "Local event",
+    "lift": 0.40677345957509137
+  },
+  "2024-08-23": {
+    "type": "concert",
+    "name": "Local event",
+    "lift": 0.40155643516895423
+  },
+  "2024-08-24": {
+    "type": "concert",
+    "name": "Local event",
+    "lift": 0.6941458248672888
+  },
+  "2024-09-06": {
+    "type": "concert",
+    "name": "Local event",
+    "lift": 0.3737240008359429
+  },
+  "2024-10-12": {
+    "type": "concert",
+    "name": "Local event",
+    "lift": 0.6546231654665113
+  },
+  "2024-10-18": {
+    "type": "concert",
+    "name": "Local event",
+    "lift": 0.5593792682350586
+  },
+  "2024-11-02": {
+    "type": "concert",
+    "name": "Local event",
+    "lift": 0.3862282841320873
+  },
+  "2024-11-16": {
+    "type": "concert",
+    "name": "Local event",
+    "lift": 0.653123732857832
+  },
+  "2024-11-30": {
+    "type": "concert",
+    "name": "Local event",
+    "lift": 0.5926508061720933
+  },
+  "2024-12-07": {
+    "type": "concert",
+    "name": "Local event",
+    "lift": 0.6856054809439187
+  },
+  "2025-01-10": {
+    "type": "concert",
+    "name": "Local event",
+    "lift": 0.3455629019276088
+  },
+  "2025-01-25": {
+    "type": "concert",
+    "name": "Local event",
+    "lift": 0.48144567138184874
+  },
+  "2025-02-22": {
+    "type": "concert",
+    "name": "Local event",
+    "lift": 0.3334248128593913
+  },
+  "2025-03-07": {
+    "type": "concert",
+    "name": "Local event",
+    "lift": 0.6812815098034594
+  },
+  "2025-03-08": {
+    "type": "concert",
+    "name": "Local event",
+    "lift": 0.6837517089260924
+  },
+  "2025-03-29": {
+    "type": "concert",
+    "name": "Local event",
+    "lift": 0.6750821730143918
+  },
+  "2025-04-25": {
+    "type": "concert",
+    "name": "Local event",
+    "lift": 0.5693313229607819
+  },
+  "2025-05-03": {
+    "type": "concert",
+    "name": "Local event",
+    "lift": 0.4329508540144658
+  },
+  "2025-05-16": {
+    "type": "concert",
+    "name": "Local event",
+    "lift": 0.3772030144635065
+  },
+  "2025-05-23": {
+    "type": "concert",
+    "name": "Local event",
+    "lift": 0.5755588031955341
+  },
+  "2025-06-06": {
+    "type": "concert",
+    "name": "Local event",
+    "lift": 0.31718305095025784
+  },
+  "2025-06-20": {
+    "type": "concert",
+    "name": "Local event",
+    "lift": 0.6107628219827321
+  },
+  "2025-06-28": {
+    "type": "concert",
+    "name": "Local event",
+    "lift": 0.6984063020410107
+  },
+  "2025-07-19": {
+    "type": "concert",
+    "name": "Local event",
+    "lift": 0.30032984673387414
+  },
+  "2025-08-01": {
+    "type": "concert",
+    "name": "Local event",
+    "lift": 0.3744555016416955
+  },
+  "2025-08-08": {
+    "type": "concert",
+    "name": "Local event",
+    "lift": 0.32276528085138034
+  },
+  "2025-08-23": {
+    "type": "concert",
+    "name": "Local event",
+    "lift": 0.5859697211584763
+  },
+  "2025-09-05": {
+    "type": "concert",
+    "name": "Local event",
+    "lift": 0.3754240314538232
+  },
+  "2025-09-06": {
+    "type": "concert",
+    "name": "Local event",
+    "lift": 0.5416536820868284
+  },
+  "2025-09-27": {
+    "type": "concert",
+    "name": "Local event",
+    "lift": 0.646802240342639
+  },
+  "2025-10-04": {
+    "type": "concert",
+    "name": "Local event",
+    "lift": 0.5028936710243281
+  },
+  "2025-10-18": {
+    "type": "concert",
+    "name": "Local event",
+    "lift": 0.32307706866657604
+  },
+  "2025-10-24": {
+    "type": "concert",
+    "name": "Local event",
+    "lift": 0.5908043623845421
+  },
+  "2025-10-31": {
+    "type": "concert",
+    "name": "Local event",
+    "lift": 0.41532742712418746
+  },
+  "2025-11-01": {
+    "type": "concert",
+    "name": "Local event",
+    "lift": 0.3107423107705712
+  },
+  "2025-11-22": {
+    "type": "concert",
+    "name": "Local event",
+    "lift": 0.36172148748907373
+  },
+  "2025-12-20": {
+    "type": "concert",
+    "name": "Local event",
+    "lift": 0.32502844633846373
+  },
+  "2025-12-26": {
+    "type": "concert",
+    "name": "Local event",
+    "lift": 0.3381413812731441
+  },
+  "2026-01-10": {
+    "type": "concert",
+    "name": "Local event",
+    "lift": 0.59916064085927
+  },
+  "2026-01-17": {
+    "type": "concert",
+    "name": "Local event",
+    "lift": 0.4122354482130997
+  },
+  "2026-02-07": {
+    "type": "concert",
+    "name": "Local event",
+    "lift": 0.6231335638825128
+  },
+  "2026-02-27": {
+    "type": "concert",
+    "name": "Local event",
+    "lift": 0.5073217103380661
+  },
+  "2026-02-28": {
+    "type": "concert",
+    "name": "Local event",
+    "lift": 0.36570135490170663
+  },
+  "2026-03-06": {
+    "type": "concert",
+    "name": "Local event",
+    "lift": 0.681643311628003
+  },
+  "2026-04-03": {
+    "type": "concert",
+    "name": "Local event",
+    "lift": 0.5224873810896697
+  },
+  "2026-05-02": {
+    "type": "concert",
+    "name": "Local event",
+    "lift": 0.6216004641052271
+  },
+  "2026-05-08": {
+    "type": "concert",
+    "name": "Local event",
+    "lift": 0.42349939540120196
+  },
+  "2026-05-15": {
+    "type": "concert",
+    "name": "Local event",
+    "lift": 0.33172675967257925
+  },
+  "2026-05-22": {
+    "type": "concert",
+    "name": "Local event",
+    "lift": 0.4908331464989506
+  },
+  "2026-05-29": {
+    "type": "concert",
+    "name": "Local event",
+    "lift": 0.37551155914546613
+  }
+}

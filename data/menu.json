@@ -1,0 +1,66 @@
+[
+  {
+    "id": "WB01",
+    "name": "Wagyu Burger",
+    "category": "main",
+    "base_daily": 48,
+    "shelf_days": 2,
+    "price": 28
+  },
+  {
+    "id": "PS02",
+    "name": "Porcini Risotto",
+    "category": "main",
+    "base_daily": 32,
+    "shelf_days": 1,
+    "price": 24
+  },
+  {
+    "id": "TC03",
+    "name": "Tuna Crudo",
+    "category": "starter",
+    "base_daily": 26,
+    "shelf_days": 1,
+    "price": 18
+  },
+  {
+    "id": "TF04",
+    "name": "Truffle Fries",
+    "category": "side",
+    "base_daily": 55,
+    "shelf_days": 1,
+    "price": 12
+  },
+  {
+    "id": "CB05",
+    "name": "Craft Brioche Bun",
+    "category": "comp",
+    "base_daily": 48,
+    "shelf_days": 2,
+    "price": 0
+  },
+  {
+    "id": "LM06",
+    "name": "Lemon Tart",
+    "category": "dessert",
+    "base_daily": 22,
+    "shelf_days": 2,
+    "price": 14
+  },
+  {
+    "id": "SM07",
+    "name": "Smash Burger",
+    "category": "main",
+    "base_daily": 38,
+    "shelf_days": 2,
+    "price": 22
+  },
+  {
+    "id": "CS08",
+    "name": "Caesar Salad",
+    "category": "starter",
+    "base_daily": 30,
+    "shelf_days": 1,
+    "price": 16
+  }
+]
