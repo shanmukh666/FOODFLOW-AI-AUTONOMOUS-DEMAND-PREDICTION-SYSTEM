@@ -1,281 +1,180 @@
 """
-KITCH·AI — Flask REST API
-Endpoints:
-  GET  /api/health               — system status + model metadata
-  GET  /api/menu                 — all menu items
-  POST /api/train                — trigger full training pipeline
-  GET  /api/forecast/<item_id>   — 7-day forecast for one item
-  GET  /api/forecast/all         — forecast for all items
-  GET  /api/features             — feature importance from trained model
-  GET  /api/metrics              — model accuracy metrics
-  GET  /api/history/<item_id>    — historical sales (last N days)
-  POST /api/simulate             — simulate a custom scenario
+KITCH·AI — Live Demo Backend
+Lightweight Flask app for deployment on Render/Railway.
+Uses pre-baked realistic forecast data so no model file is needed.
+Wakes up instantly — no heavy ML dependencies required.
 """
-
-import sys, os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "pipeline"))
-
-from flask import Flask, jsonify, request
+import json, os, random, math
+from datetime import date, timedelta
+from flask import Flask, jsonify, send_from_directory
 from flask_cors import CORS
-import pandas as pd
-import numpy as np
-import json, pickle, traceback
-from datetime import date, timedelta, datetime
 
-app = Flask(__name__)
-CORS(app)  # Allow frontend to call from any origin
+app = Flask(__name__, static_folder='static', static_url_path='')
+CORS(app)
 
-DATA_DIR  = os.path.join(os.path.dirname(__file__), "data")
-MODEL_DIR = os.path.join(os.path.dirname(__file__), "models")
-META_PATH = os.path.join(MODEL_DIR, "model_meta.json")
+# ── Pre-baked menu ─────────────────────────────────────────────────────────────
+MENU = [
+    {"id":"WB01","name":"Wagyu Burger",     "category":"main",   "base":48,"shelf_days":2,"price":28},
+    {"id":"PS02","name":"Porcini Risotto",  "category":"main",   "base":32,"shelf_days":1,"price":24},
+    {"id":"TC03","name":"Tuna Crudo",       "category":"starter","base":26,"shelf_days":1,"price":18},
+    {"id":"TF04","name":"Truffle Fries",    "category":"side",   "base":55,"shelf_days":1,"price":12},
+    {"id":"CB05","name":"Craft Brioche Bun","category":"comp",   "base":48,"shelf_days":2,"price":0},
+    {"id":"LM06","name":"Lemon Tart",       "category":"dessert","base":22,"shelf_days":2,"price":14},
+    {"id":"SM07","name":"Smash Burger",     "category":"main",   "base":38,"shelf_days":2,"price":22},
+    {"id":"CS08","name":"Caesar Salad",     "category":"starter","base":30,"shelf_days":1,"price":16},
+]
+MENU_MAP = {m["id"]: m for m in MENU}
 
-# ── Helpers ────────────────────────────────────────────────────────────────────
-def load_meta() -> dict:
-    if os.path.exists(META_PATH):
-        with open(META_PATH) as f:
-            return json.load(f)
-    return {}
+DAYS     = ["MON","TUE","WED","THU","FRI","SAT","SUN"]
+DOW_MULT = [0.72, 0.75, 0.80, 0.88, 1.15, 1.30, 0.95]
+NOTES    = ["baseline trend","pre-weekend build","mid-week uptick",
+            "Friday boost","Saturday peak","Sunday slowdown","baseline trend"]
 
-def err(msg: str, code: int = 400):
-    return jsonify({"error": msg}), code
+FEATURE_IMPORTANCE = [
+    {"name":"lag_7 (last week)",   "importance":88},
+    {"name":"day_of_week",         "importance":74},
+    {"name":"rolling_14 avg",      "importance":68},
+    {"name":"is_holiday",          "importance":55},
+    {"name":"precipitation_mm",    "importance":47},
+    {"name":"local_event_nearby",  "importance":42},
+    {"name":"temperature_c",       "importance":31},
+    {"name":"is_promo_day",        "importance":28},
+]
 
-# ── Health ─────────────────────────────────────────────────────────────────────
+def make_forecast(item_id, days=7):
+    item  = MENU_MAP.get(item_id, MENU[0])
+    base  = item["base"]
+    today = date.today()
+    result= []
+    qtys  = []
+    for i in range(days):
+        d   = today + timedelta(days=i)
+        dow = d.weekday()
+        qty = max(1, int(base * DOW_MULT[dow] * (1 + random.uniform(-0.06, 0.06))))
+        qtys.append(qty)
+        result.append({
+            "date":  d.isoformat(),
+            "name":  DAYS[dow],
+            "qty":   qty,
+            "level": "high" if qty >= base*1.1 else ("low" if qty <= base*0.82 else "med"),
+            "note":  NOTES[dow],
+            "temp_c": round(18 + 6*math.sin(2*math.pi*(d.month-3)/12) + random.uniform(-2,2), 1),
+            "rain_mm": round(random.uniform(0,3), 1),
+            "event": dow in (4,5) and random.random() < 0.3,
+        })
+    peak = max(result, key=lambda x: x["qty"])
+    low  = min(result, key=lambda x: x["qty"])
+    return {
+        "item_id":    item_id,
+        "item_name":  item["name"],
+        "category":   item["category"],
+        "shelf_days": item["shelf_days"],
+        "forecast_start": date.today().isoformat(),
+        "days": result,
+        "summary": {
+            "total_week": sum(qtys),
+            "avg_daily":  round(sum(qtys)/len(qtys), 1),
+            "peak_day":   peak["name"],
+            "peak_qty":   peak["qty"],
+            "low_day":    low["name"],
+            "low_qty":    low["qty"],
+        }
+    }
+
+# ── Routes ─────────────────────────────────────────────────────────────────────
+@app.route("/")
+def index():
+    return send_from_directory("static", "index.html")
+
 @app.route("/api/health")
 def health():
-    meta = load_meta()
-    model_ready = os.path.exists(os.path.join(MODEL_DIR, "xgb_demand.pkl"))
-    data_ready  = os.path.exists(os.path.join(DATA_DIR, "pos_sales.csv"))
-
     return jsonify({
-        "status":      "online",
-        "timestamp":   datetime.now().isoformat(),
-        "model_ready": model_ready,
-        "data_ready":  data_ready,
-        "trained_at":  meta.get("trained_at"),
-        "cv_mape":     meta.get("cv_mean_mape"),
-        "holdout_mape": meta.get("holdout_mape"),
-        "train_rows":  meta.get("train_rows"),
-        "date_range":  meta.get("date_range"),
-        "version":     "2.4.0",
+        "status":       "online",
+        "model_ready":  True,
+        "data_ready":   True,
+        "cv_mape":      9.5,
+        "holdout_mape": 3.8,
+        "train_rows":   6088,
+        "date_range":   {"start":"2024-05-01","end":"2026-05-31"},
+        "version":      "2.4.0-demo",
+        "demo":         True,
     })
 
-# ── Menu ───────────────────────────────────────────────────────────────────────
 @app.route("/api/menu")
 def menu():
-    path = os.path.join(DATA_DIR, "menu.json")
-    if not os.path.exists(path):
-        return err("Menu data not found. Run data generation first.", 404)
-    with open(path) as f:
-        items = json.load(f)
-    return jsonify({"items": items, "count": len(items)})
+    return jsonify({"items": MENU, "count": len(MENU)})
 
-# ── Train ──────────────────────────────────────────────────────────────────────
-@app.route("/api/train", methods=["POST"])
-def train():
-    """
-    Runs the full pipeline: generate → feature-engineer → train.
-    Can take 30-60s for 18 months of data. In production, run async.
-    """
-    try:
-        from generate_pos_data import generate
-        from train_model import run_training
-
-        body   = request.get_json(silent=True) or {}
-        months = int(body.get("months", 18))
-
-        print(f"[API] /train  months={months}")
-        generate(output_dir=DATA_DIR, months=months)
-        meta = run_training(data_dir=DATA_DIR)
-
-        return jsonify({
-            "status":       "trained",
-            "cv_mape":      meta["cv_mean_mape"],
-            "holdout_mape": meta["holdout_mape"],
-            "train_rows":   meta["train_rows"],
-            "waste":        meta["waste_reduction"],
-            "trained_at":   meta["trained_at"],
-        })
-    except Exception as e:
-        traceback.print_exc()
-        return err(str(e), 500)
-
-# ── Forecast single item ───────────────────────────────────────────────────────
 @app.route("/api/forecast/<item_id>")
-def forecast_one(item_id):
-    try:
-        from forecaster import forecast_item
-        days  = int(request.args.get("days",  7))
-        start_str = request.args.get("start")
-        start = date.fromisoformat(start_str) if start_str else date.today()
+def forecast(item_id):
+    from flask import request
+    days = int(request.args.get("days", 7))
+    return jsonify(make_forecast(item_id, days))
 
-        print(f"[API] /forecast/{item_id}  days={days}  start={start}")
-        result = forecast_item(item_id, days=days, start=start, data_dir=DATA_DIR)
-        return jsonify(result)
-    except FileNotFoundError as e:
-        return err(str(e), 404)
-    except Exception as e:
-        traceback.print_exc()
-        return err(str(e), 500)
-
-# ── Forecast all items ─────────────────────────────────────────────────────────
 @app.route("/api/forecast/all")
 def forecast_all():
-    try:
-        from forecaster import forecast_all_items
-        days = int(request.args.get("days", 7))
-        print(f"[API] /forecast/all  days={days}")
-        results = forecast_all_items(days=days, data_dir=DATA_DIR)
-        return jsonify({"forecasts": results, "item_count": len(results)})
-    except Exception as e:
-        traceback.print_exc()
-        return err(str(e), 500)
+    from flask import request
+    days = int(request.args.get("days", 7))
+    return jsonify({"forecasts": {m["id"]: make_forecast(m["id"], days) for m in MENU}, "item_count": len(MENU)})
 
-# ── Feature importance ─────────────────────────────────────────────────────────
 @app.route("/api/features")
 def features():
-    meta = load_meta()
-    if not meta:
-        return err("Model not trained yet.", 404)
-    return jsonify({
-        "features":   meta.get("feature_importance", []),
-        "cv_mape":    meta.get("cv_mean_mape"),
-        "holdout_mape": meta.get("holdout_mape"),
-    })
+    return jsonify({"features": FEATURE_IMPORTANCE, "cv_mape": 9.5, "holdout_mape": 3.8})
 
-# ── Accuracy metrics ───────────────────────────────────────────────────────────
 @app.route("/api/metrics")
 def metrics():
-    meta = load_meta()
-    if not meta:
-        return err("Model not trained yet.", 404)
     return jsonify({
-        "cv_mean_mape":     meta.get("cv_mean_mape"),
-        "cv_mean_rmse":     meta.get("cv_mean_rmse"),
-        "holdout_mape":     meta.get("holdout_mape"),
-        "holdout_rmse":     meta.get("holdout_rmse"),
-        "waste_reduction":  meta.get("waste_reduction"),
-        "cv_folds":         meta.get("cv_folds", []),
-        "trained_at":       meta.get("trained_at"),
-        "train_rows":       meta.get("train_rows"),
-        "date_range":       meta.get("date_range"),
+        "cv_mean_mape":    9.5,
+        "cv_mean_rmse":    4.6,
+        "holdout_mape":    3.8,
+        "holdout_rmse":    1.6,
+        "waste_reduction": {"waste_reduction_pct": 72.6, "kg_food_saved": 323},
+        "train_rows":      6088,
+        "date_range":      {"start":"2024-05-01","end":"2026-05-31"},
     })
 
-# ── Historical sales ───────────────────────────────────────────────────────────
 @app.route("/api/history/<item_id>")
 def history(item_id):
-    try:
-        pos_path = os.path.join(DATA_DIR, "pos_sales.csv")
-        if not os.path.exists(pos_path):
-            return err("POS data not found. Run /api/train first.", 404)
+    item = MENU_MAP.get(item_id, MENU[0])
+    base = item["base"]
+    dow_names = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"]
+    return jsonify({
+        "item_id":      item_id,
+        "item_name":    item["name"],
+        "days_returned":90,
+        "summary": {
+            "mean_daily":   round(base * 0.98, 1),
+            "max_daily":    int(base * 1.35),
+            "min_daily":    int(base * 0.65),
+            "total_qty":    int(base * 0.98 * 90),
+            "total_rev":    round(base * 0.98 * 90 * item["price"], 2),
+            "dow_averages": {d: round(base * DOW_MULT[i], 1) for i, d in enumerate(dow_names)},
+        }
+    })
 
-        days = int(request.args.get("days", 90))
-        pos  = pd.read_csv(pos_path, parse_dates=["date"])
-        item = pos[pos["item_id"] == item_id].sort_values("date")
-
-        if item.empty:
-            return err(f"Item '{item_id}' not found.", 404)
-
-        cutoff = item["date"].max() - pd.Timedelta(days=days)
-        item   = item[item["date"] >= cutoff]
-
-        # Day-of-week averages
-        dow_avg = (
-            item.groupby("day_of_week")["qty_sold"]
-            .mean().round(1).to_dict()
-        )
-        dow_names = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
-
-        records = item[["date", "qty_sold", "revenue", "day_of_week", "event_type"]].copy()
-        records["date"] = records["date"].dt.date.astype(str)
-        records["qty_sold"]    = records["qty_sold"].astype(int)
-        records["day_of_week"] = records["day_of_week"].astype(int)
-
-        return jsonify({
-            "item_id":       item_id,
-            "item_name":     item["item_name"].iloc[0] if len(item) else item_id,
-            "days_returned": len(item),
-            "records":       records.to_dict(orient="records"),
-            "summary": {
-                "mean_daily":   round(float(item["qty_sold"].mean()), 1),
-                "max_daily":    int(item["qty_sold"].max()),
-                "min_daily":    int(item["qty_sold"].min()),
-                "total_qty":    int(item["qty_sold"].sum()),
-                "total_rev":    round(float(item["revenue"].sum()), 2),
-                "dow_averages": {dow_names[int(k)]: round(float(v), 1)
-                                 for k, v in dow_avg.items()},
-            },
-        })
-    except Exception as e:
-        traceback.print_exc()
-        return err(str(e), 500)
-
-# ── Custom scenario simulation ─────────────────────────────────────────────────
 @app.route("/api/simulate", methods=["POST"])
 def simulate():
-    """
-    Simulate a custom scenario by overriding signals.
-    Body: { item_id, days, overrides: { rain: bool, event: bool, promo: bool, temp_c: float } }
-    """
-    try:
-        from forecaster import forecast_item, load_model, build_forecast_row
-        from feature_engineering import CATEGORY_MAP
+    from flask import request
+    body      = request.get_json(silent=True) or {}
+    item_id   = body.get("item_id", "WB01")
+    days      = int(body.get("days", 7))
+    overrides = body.get("overrides", {})
+    baseline  = make_forecast(item_id, days)
+    rain_f    = -0.15 if overrides.get("rain")  else 0
+    event_f   = +0.45 if overrides.get("event") else 0
+    promo_f   = +0.20 if overrides.get("promo") else 0
+    temp_f    = 0.005 * float(overrides.get("temp_c", 0))
+    total_f   = 1 + rain_f + event_f + promo_f + temp_f
+    sim_days  = [{**d, "qty": max(0, int(round(d["qty"]*total_f))), "simulated": True}
+                 for d in baseline["days"]]
+    return jsonify({
+        "item_id":        item_id,
+        "item_name":      baseline["item_name"],
+        "overrides":      overrides,
+        "baseline_days":  baseline["days"],
+        "simulated_days": sim_days,
+        "factors":        {"rain":rain_f,"event":event_f,"promo":promo_f,"temp":temp_f,"total":round(total_f-1,3)},
+    })
 
-        body      = request.get_json(silent=True) or {}
-        item_id   = body.get("item_id", "WB01")
-        days      = int(body.get("days", 7))
-        overrides = body.get("overrides", {})
-
-        # Run baseline forecast
-        baseline = forecast_item(item_id, days=days, data_dir=DATA_DIR)
-
-        # Apply overrides — adjust qty manually based on signal factors
-        rain_factor  = -0.15 if overrides.get("rain")  else 0
-        event_factor = +0.45 if overrides.get("event") else 0
-        promo_factor = +0.20 if overrides.get("promo") else 0
-        temp_delta   = float(overrides.get("temp_c", 0))
-        temp_factor  = 0.005 * temp_delta  # 0.5% per degree C
-
-        total_factor = 1 + rain_factor + event_factor + promo_factor + temp_factor
-
-        simulated_days = []
-        for d in baseline["days"]:
-            new_qty = max(0, int(round(d["qty"] * total_factor)))
-            simulated_days.append({**d, "qty": new_qty, "simulated": True})
-
-        delta_avg = round(
-            np.mean([s["qty"] for s in simulated_days]) -
-            np.mean([d["qty"] for d in baseline["days"]]), 1
-        )
-
-        return jsonify({
-            "item_id":      item_id,
-            "item_name":    baseline["item_name"],
-            "overrides":    overrides,
-            "factors": {
-                "rain":   rain_factor,
-                "event":  event_factor,
-                "promo":  promo_factor,
-                "temp":   temp_factor,
-                "total":  round(total_factor - 1, 3),
-            },
-            "baseline_days":  baseline["days"],
-            "simulated_days": simulated_days,
-            "delta_avg_daily": delta_avg,
-        })
-    except Exception as e:
-        traceback.print_exc()
-        return err(str(e), 500)
-
-# ── Run ────────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
-    print("=" * 55)
-    print("  KITCH·AI  —  Flask Backend  —  Port 5000")
-    print("=" * 55)
-    print("  POST /api/train          — run full pipeline")
-    print("  GET  /api/forecast/WB01  — 7-day item forecast")
-    print("  GET  /api/forecast/all   — all items")
-    print("  GET  /api/metrics        — model accuracy")
-    print("  GET  /api/history/WB01   — historical sales")
-    print("  POST /api/simulate       — scenario simulation")
-    print("=" * 55)
-    app.run(debug=True, port=5000, host="0.0.0.0")
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=False)
