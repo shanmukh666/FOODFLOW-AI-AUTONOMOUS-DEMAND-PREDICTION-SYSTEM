@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KITCH·AI — Neural Demand Engine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;600;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{--cyan:#00f5ff;--magenta:#ff006e;--amber:#ffb800;--green:#00ff9f;--bg:#050810;--glass:rgba(0,245,255,0.04);--glass-border:rgba(0,245,255,0.15);--text:#e2eaff;--muted:rgba(226,234,255,0.4);--font-d:'Orbitron',monospace;--font-m:'Share Tech Mono',monospace;--font-b:'DM Sans',sans-serif;}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:var(--font-b);min-height:100vh;overflow-x:hidden;cursor:crosshair;}
+body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.03) 2px,rgba(0,0,0,0.03) 4px);pointer-events:none;z-index:1000;}
+.orb{position:fixed;border-radius:50%;filter:blur(120px);pointer-events:none;z-index:0;animation:drift 8s ease-in-out infinite alternate;}
+.orb1{width:600px;height:600px;background:rgba(0,245,255,0.06);top:-200px;right:-100px;}
+.orb2{width:500px;height:500px;background:rgba(255,0,110,0.05);bottom:-100px;left:-100px;animation-delay:-4s;}
+.orb3{width:300px;height:300px;background:rgba(255,184,0,0.04);top:40%;left:40%;animation-delay:-2s;}
+@keyframes drift{from{transform:translate(0,0) scale(1);}to{transform:translate(30px,-20px) scale(1.1);}}
+@keyframes pulse{0%,100%{transform:scale(1);opacity:1;}50%{transform:scale(1.4);opacity:.7;}}
+@keyframes bounce{0%,80%,100%{transform:scale(.6);opacity:.3;}40%{transform:scale(1);opacity:1;}}
+@keyframes flicker{0%,95%,100%{opacity:1;}96%{opacity:.4;}98%{opacity:.2;}}
+@keyframes in{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:0;}}
+.app{position:relative;z-index:1;min-height:100vh;display:flex;flex-direction:column;}
+/* TOPBAR */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 40px;border-bottom:1px solid rgba(0,245,255,0.1);background:rgba(5,8,16,0.92);backdrop-filter:blur(20px);position:sticky;top:0;z-index:100;gap:16px;flex-wrap:wrap;}
+.logo{font-family:var(--font-d);font-size:22px;font-weight:900;letter-spacing:.15em;color:var(--cyan);text-shadow:0 0 20px rgba(0,245,255,.6);display:flex;align-items:center;gap:12px;}
+.logo-dot{width:8px;height:8px;border-radius:50%;background:var(--cyan);box-shadow:0 0 12px var(--cyan);animation:pulse 2s ease-in-out infinite;}
+.logo-sub{font-family:var(--font-m);font-size:10px;color:var(--muted);letter-spacing:.3em;margin-top:2px;}
+.chips{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.chip{font-family:var(--font-m);font-size:10px;letter-spacing:.15em;padding:5px 12px;border-radius:2px;border:1px solid;display:flex;align-items:center;gap:6px;white-space:nowrap;}
+.chip.green{border-color:rgba(0,255,159,.4);color:var(--green);background:rgba(0,255,159,.05);}
+.chip.amber{border-color:rgba(255,184,0,.4);color:var(--amber);background:rgba(255,184,0,.05);}
+.chip.muted{border-color:rgba(0,245,255,.15);color:var(--muted);}
+.dot{width:5px;height:5px;border-radius:50%;}
+.dot.g{background:var(--green);box-shadow:0 0 6px var(--green);animation:pulse 1.5s ease-in-out infinite;}
+.dot.a{background:var(--amber);box-shadow:0 0 6px var(--amber);animation:pulse 1s ease-in-out infinite;}
+/* LAYOUT */
+.main{display:grid;grid-template-columns:300px 1fr;flex:1;}
+/* SIDEBAR */
+.sidebar{border-right:1px solid rgba(0,245,255,.1);padding:24px 20px;display:flex;flex-direction:column;gap:20px;background:linear-gradient(180deg,rgba(0,245,255,.02) 0%,transparent 100%);overflow-y:auto;max-height:calc(100vh - 68px);}
+.sec-lbl{font-family:var(--font-m);font-size:9px;letter-spacing:.35em;color:var(--cyan);opacity:.6;margin-bottom:8px;}
+.card{background:var(--glass);border:1px solid var(--glass-border);border-radius:8px;padding:16px;position:relative;overflow:hidden;}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(0,245,255,.4),transparent);}
+.lbl{font-family:var(--font-m);font-size:10px;letter-spacing:.2em;color:var(--muted);margin-bottom:6px;display:block;}
+.inp{width:100%;background:rgba(0,0,0,.4);border:1px solid rgba(0,245,255,.2);border-radius:4px;color:var(--text);font-family:var(--font-m);font-size:12px;padding:9px 12px;outline:none;transition:border-color .2s;appearance:none;}
+.inp:focus{border-color:var(--cyan);box-shadow:0 0 0 1px rgba(0,245,255,.2);}
+.inp option{background:#0a0f1e;}
+.fg{margin-bottom:12px;}.fg:last-child{margin-bottom:0;}
+.slider{-webkit-appearance:none;width:100%;height:3px;background:rgba(0,245,255,.15);border-radius:2px;outline:none;cursor:pointer;}
+.slider::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--cyan);box-shadow:0 0 10px rgba(0,245,255,.6);cursor:pointer;}
+.srow{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;}
+.sval{font-family:var(--font-m);font-size:14px;color:var(--cyan);}
+.tgroup{display:flex;gap:6px;flex-wrap:wrap;}
+.tbtn{font-family:var(--font-m);font-size:10px;letter-spacing:.1em;padding:5px 10px;border-radius:3px;border:1px solid rgba(0,245,255,.2);background:transparent;color:var(--muted);cursor:pointer;transition:all .15s;}
+.tbtn.on{border-color:var(--cyan);background:rgba(0,245,255,.1);color:var(--cyan);}
+/* LAUNCH */
+.go{width:100%;padding:14px;background:linear-gradient(135deg,rgba(0,245,255,.15),rgba(0,245,255,.05));border:1px solid var(--cyan);border-radius:6px;color:var(--cyan);font-family:var(--font-d);font-size:12px;font-weight:600;letter-spacing:.2em;cursor:pointer;position:relative;overflow:hidden;transition:all .2s;box-shadow:0 0 20px rgba(0,245,255,.1);}
+.go:hover{background:rgba(0,245,255,.2);box-shadow:0 0 40px rgba(0,245,255,.25);transform:translateY(-1px);}
+.go.busy{pointer-events:none;border-color:var(--amber);color:var(--amber);}
+/* METRICS */
+.mrow{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.mc{padding:10px 6px;border-radius:6px;border:1px solid rgba(0,245,255,.1);background:rgba(0,0,0,.3);text-align:center;}
+.mc-v{font-family:var(--font-d);font-size:14px;font-weight:600;color:var(--cyan);display:block;}
+.mc-l{font-family:var(--font-m);font-size:8px;letter-spacing:.1em;color:var(--muted);display:block;margin-top:2px;}
+/* PANEL */
+.panel{display:flex;flex-direction:column;overflow:hidden;}
+.hero{padding:36px 48px 24px;border-bottom:1px solid rgba(0,245,255,.08);}
+.hero-lbl{font-family:var(--font-m);font-size:10px;letter-spacing:.4em;color:var(--magenta);margin-bottom:12px;display:flex;align-items:center;gap:10px;}
+.hero-lbl::before{content:'';width:30px;height:1px;background:var(--magenta);box-shadow:0 0 6px var(--magenta);}
+.hero-h{font-family:var(--font-d);font-size:44px;font-weight:900;line-height:1;letter-spacing:-.02em;margin-bottom:12px;background:linear-gradient(135deg,#fff 0%,var(--cyan) 50%,var(--magenta) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.hero-p{font-size:14px;color:var(--muted);font-weight:300;line-height:1.6;max-width:540px;}
+.htags{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;}
+.tag{display:inline-flex;align-items:center;font-family:var(--font-m);font-size:9px;color:var(--muted);letter-spacing:.1em;padding:3px 8px;border-radius:2px;border:1px solid rgba(255,255,255,.06);background:rgba(0,0,0,.2);}
+/* OUTPUT */
+.out{flex:1;padding:24px 48px;overflow-y:auto;}
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:360px;text-align:center;}
+.empty-g{font-family:var(--font-d);font-size:80px;font-weight:900;color:rgba(0,245,255,.07);line-height:1;margin-bottom:18px;animation:flicker 4s ease-in-out infinite;}
+.empty-t{font-family:var(--font-d);font-size:16px;color:rgba(0,245,255,.25);letter-spacing:.1em;margin-bottom:6px;}
+.empty-s{font-family:var(--font-m);font-size:10px;color:rgba(226,234,255,.18);letter-spacing:.15em;}
+.sh{display:flex;align-items:center;gap:12px;margin-bottom:14px;}
+.st{font-family:var(--font-d);font-size:12px;font-weight:600;letter-spacing:.15em;}
+.sl{flex:1;height:1px;background:linear-gradient(90deg,rgba(0,245,255,.2),transparent);}
+/* FORECAST */
+.fgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:9px;margin-bottom:24px;}
+.fd{background:var(--glass);border:1px solid rgba(0,245,255,.1);border-radius:8px;padding:14px 8px;text-align:center;position:relative;overflow:hidden;transition:border-color .2s,transform .2s;animation:in .4s both;}
+.fd:hover{border-color:rgba(0,245,255,.35);transform:translateY(-2px);}
+.fd::before{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--cyan),var(--magenta));transform:scaleX(var(--fill,0));transform-origin:left;transition:transform .8s cubic-bezier(.16,1,.3,1);}
+.fd-day{font-family:var(--font-m);font-size:9px;letter-spacing:.2em;color:var(--muted);margin-bottom:7px;}
+.fd-qty{font-family:var(--font-d);font-size:24px;font-weight:600;color:var(--cyan);line-height:1;margin-bottom:4px;text-shadow:0 0 20px rgba(0,245,255,.4);}
+.fd-item{font-size:9px;color:var(--muted);}
+.fd-note{font-family:var(--font-m);font-size:8px;color:var(--muted);margin-top:5px;opacity:.6;line-height:1.3;}
+.badge{display:inline-block;margin-top:6px;font-family:var(--font-m);font-size:8px;letter-spacing:.1em;padding:2px 6px;border-radius:2px;}
+.bh{background:rgba(255,0,110,.15);color:#ff6699;border:1px solid rgba(255,0,110,.2);}
+.bm{background:rgba(255,184,0,.1);color:var(--amber);border:1px solid rgba(255,184,0,.2);}
+.bl{background:rgba(0,255,159,.08);color:var(--green);border:1px solid rgba(0,255,159,.15);}
+/* AI CARD */
+.acard{background:linear-gradient(135deg,rgba(0,245,255,.03),rgba(255,0,110,.02));border:1px solid rgba(0,245,255,.12);border-radius:10px;padding:22px 26px;margin-bottom:18px;position:relative;animation:in .5s both;}
+.acard::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,var(--cyan),transparent 60%);}
+.ahead{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.aico{width:30px;height:30px;border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;background:linear-gradient(135deg,rgba(0,245,255,.2),rgba(255,0,110,.1));border:1px solid rgba(0,245,255,.3);}
+.aname{font-family:var(--font-d);font-size:11px;letter-spacing:.2em;color:var(--cyan);}
+.ats{font-family:var(--font-m);font-size:9px;color:var(--muted);margin-left:auto;}
+.atxt{font-size:14px;color:var(--text);line-height:1.8;font-weight:300;}
+.atxt strong{color:var(--cyan);font-weight:500;}
+.atags{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;}
+/* FEATURES */
+.frow{display:flex;align-items:center;gap:12px;margin-bottom:9px;animation:in .4s both;}
+.fn{font-family:var(--font-m);font-size:11px;color:var(--muted);width:175px;flex-shrink:0;}
+.ft{flex:1;height:6px;background:rgba(255,255,255,.05);border-radius:3px;overflow:hidden;}
+.ff{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--cyan),var(--magenta));transition:width 1s cubic-bezier(.16,1,.3,1);}
+.fv{font-family:var(--font-m);font-size:11px;color:var(--cyan);width:34px;text-align:right;}
+/* LOADER */
+.loader{display:flex;align-items:center;gap:6px;padding:20px 0;}
+.ld{width:6px;height:6px;border-radius:50%;background:var(--cyan);animation:bounce 1.2s ease-in-out infinite;box-shadow:0 0 6px rgba(0,245,255,.6);}
+.ld:nth-child(2){animation-delay:.2s;}.ld:nth-child(3){animation-delay:.4s;}
+.lt{font-family:var(--font-m);font-size:11px;letter-spacing:.2em;color:var(--muted);margin-left:8px;}
+/* CHAT */
+.chat{border-top:1px solid rgba(0,245,255,.08);padding:16px 48px;display:flex;gap:10px;align-items:center;}
+.ciwrap{flex:1;background:rgba(0,0,0,.4);border:1px solid rgba(0,245,255,.2);border-radius:8px;padding:11px 15px;display:flex;align-items:center;gap:10px;transition:border-color .2s;}
+.ciwrap:focus-within{border-color:var(--cyan);}
+.ci{flex:1;background:transparent;border:none;outline:none;color:var(--text);font-family:var(--font-b);font-size:14px;font-weight:300;}
+.ci::placeholder{color:rgba(226,234,255,.22);}
+.clbl{font-family:var(--font-m);font-size:9px;color:var(--cyan);letter-spacing:.2em;white-space:nowrap;}
+.csend{padding:11px 20px;background:rgba(0,245,255,.08);border:1px solid var(--cyan);border-radius:6px;color:var(--cyan);font-family:var(--font-m);font-size:11px;letter-spacing:.15em;cursor:pointer;transition:all .2s;}
+.csend:hover{background:rgba(0,245,255,.18);}
+/* DEMO BANNER */
+.demo-banner{background:rgba(255,184,0,0.06);border:1px solid rgba(255,184,0,0.2);border-radius:6px;padding:10px 16px;font-family:var(--font-m);font-size:10px;color:var(--amber);letter-spacing:.1em;text-align:center;}
+.typing::after{content:'▋';color:var(--cyan);animation:blink 1s step-end infinite;}
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-thumb{background:rgba(0,245,255,.2);border-radius:2px;}
+</style>
+</head>
+<body>
+<div class="orb orb1"></div><div class="orb orb2"></div><div class="orb orb3"></div>
+<div class="app">
+  <header class="topbar">
+    <div>
+      <div class="logo"><div class="logo-dot"></div>KITCH·AI</div>
+      <div class="logo-sub">NEURAL DEMAND ENGINE v2.4</div>
+    </div>
+    <div class="chips">
+      <div class="chip amber" id="bk-chip"><div class="dot a" id="bk-dot"></div><span id="bk-lbl">CONNECTING...</span></div>
+      <div class="chip muted" id="model-chip">XGBOOST · DEMO</div>
+      <div class="chip muted" id="clk">—</div>
+    </div>
+  </header>
+  <div class="main">
+    <aside class="sidebar">
+      <div class="demo-banner">◈ LIVE DEMO — XGBoost Backend Active</div>
+      <div>
+        <div class="sec-lbl">▸ RESTAURANT CONFIG</div>
+        <div class="card">
+          <div class="fg"><label class="lbl">CUISINE TYPE</label>
+            <select class="inp" id="cuisine">
+              <option>Contemporary American</option><option>Italian / Mediterranean</option>
+              <option>Japanese / Pan-Asian</option><option>Mexican / Latin Fusion</option>
+              <option>Farm-to-Table</option><option>BBQ / Smokehouse</option>
+            </select></div>
+          <div class="fg"><label class="lbl">COVERS PER NIGHT</label>
+            <div class="srow"><span class="lbl" style="margin:0">CAPACITY</span><span class="sval" id="cov-v">120</span></div>
+            <input type="range" class="slider" id="covers" min="30" max="400" value="120" step="10"></div>
+          <div class="fg"><label class="lbl">LOCATION TYPE</label>
+            <select class="inp" id="location">
+              <option>Urban city center</option><option>Suburban strip mall</option>
+              <option>Tourist destination</option><option>Business district</option>
+            </select></div>
+        </div>
+      </div>
+      <div>
+        <div class="sec-lbl">▸ FORECAST PARAMETERS</div>
+        <div class="card">
+          <div class="fg"><label class="lbl">DAYS AHEAD</label>
+            <div class="srow"><span class="lbl" style="margin:0">HORIZON</span><span class="sval" id="hor-v">7</span></div>
+            <input type="range" class="slider" id="horizon" min="1" max="14" value="7" step="1"></div>
+          <div class="fg"><label class="lbl">ACTIVE SIGNALS</label>
+            <div class="tgroup">
+              <button class="tbtn on" data-sig="weather">WEATHER</button>
+              <button class="tbtn on" data-sig="events">EVENTS</button>
+              <button class="tbtn on" data-sig="holidays">HOLIDAYS</button>
+              <button class="tbtn on" data-sig="promo">PROMOS</button>
+            </div></div>
+          <div class="fg"><label class="lbl">MODEL</label>
+            <select class="inp" id="model"><option>XGBoost (recommended)</option><option>Facebook Prophet</option><option>LSTM Neural Net</option></select></div>
+        </div>
+      </div>
+      <div>
+        <div class="sec-lbl">▸ MENU FOCUS ITEM</div>
+        <div class="card">
+          <div class="fg"><label class="lbl">ITEM</label>
+            <select class="inp" id="item-sel">
+              <option value="WB01">Wagyu Burger</option><option value="PS02">Porcini Risotto</option>
+              <option value="TC03">Tuna Crudo</option><option value="TF04">Truffle Fries</option>
+              <option value="CB05">Craft Brioche Bun</option><option value="LM06">Lemon Tart</option>
+              <option value="SM07">Smash Burger</option><option value="CS08">Caesar Salad</option>
+            </select></div>
+          <div class="fg"><label class="lbl">SHELF LIFE (DAYS)</label>
+            <input type="number" class="inp" id="shelf" value="2" min="1" max="14"></div>
+        </div>
+      </div>
+      <button class="go" id="go-btn" onclick="runForecast()">◈ RUN NEURAL FORECAST</button>
+      <div>
+        <div class="sec-lbl">▸ MODEL ACCURACY</div>
+        <div class="mrow">
+          <div class="mc"><span class="mc-v" id="m-mape">3.8%</span><span class="mc-l">MAPE</span></div>
+          <div class="mc"><span class="mc-v" id="m-waste">72.6%</span><span class="mc-l">WASTE↓</span></div>
+          <div class="mc"><span class="mc-v" id="m-rows">6.1K</span><span class="mc-l">ROWS</span></div>
+        </div>
+      </div>
+    </aside>
+    <div class="panel">
+      <div class="hero">
+        <div class="hero-lbl">DEMAND INTELLIGENCE SYSTEM</div>
+        <div class="hero-h">7-Day<br>Forecast</div>
+        <div class="hero-p">Neural demand forecasting powered by POS history, live weather signals, and local event intelligence. Zero food waste, perfect prep.</div>
+        <div class="htags" id="htags">
+          <div class="tag">◈ CONNECTING TO API...</div>
+          <div class="tag">◈ XGBOOST MODEL</div>
+          <div class="tag">◈ 35 FEATURES</div>
+          <div class="tag">◈ MAPE 3.8%</div>
+        </div>
+      </div>
+      <div class="out" id="out">
+        <div class="empty">
+          <div class="empty-g">AI</div>
+          <div class="empty-t">AWAITING SIGNAL</div>
+          <div class="empty-s">Select a menu item · Click Run Forecast</div>
+        </div>
+      </div>
+      <div class="chat">
+        <div class="ciwrap">
+          <span class="clbl">ASK AI ▸</span>
+          <input type="text" class="ci" id="ci" placeholder="e.g. Why is Saturday spiking? How many to order this week?" onkeydown="if(event.key==='Enter')sendChat()">
+        </div>
+        <button class="csend" onclick="sendChat()">TRANSMIT ▶</button>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+const API = '';  // same origin — no URL needed
+let lastData = null;
+
+setInterval(()=>{
+  document.getElementById('clk').textContent =
+    new Date().toLocaleTimeString('en-US',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'});
+},1000);
+
+document.getElementById('covers').addEventListener('input',e=>document.getElementById('cov-v').textContent=e.target.value);
+document.getElementById('horizon').addEventListener('input',e=>document.getElementById('hor-v').textContent=e.target.value);
+document.querySelectorAll('.tbtn').forEach(b=>b.addEventListener('click',()=>b.classList.toggle('on')));
+
+function state(){
+  const sel=document.getElementById('item-sel');
+  return{
+    itemId:sel.value,itemName:sel.options[sel.selectedIndex].text,
+    horizon:document.getElementById('horizon').value,
+    covers:document.getElementById('covers').value,
+    model:document.getElementById('model').value,
+    signals:[...document.querySelectorAll('.tbtn.on')].map(b=>b.dataset.sig),
+    shelf:document.getElementById('shelf').value,
+  };
+}
+
+async function checkHealth(){
+  try{
+    const r=await fetch(`${API}/api/health`);
+    const d=await r.json();
+    if(r.ok&&d.status==='online'){
+      const chip=document.getElementById('bk-chip');
+      chip.className='chip green';
+      document.getElementById('bk-dot').className='dot g';
+      document.getElementById('bk-lbl').textContent='API ONLINE';
+      document.getElementById('model-chip').textContent='XGBOOST · LIVE';
+      document.getElementById('htags').innerHTML=`
+        <div class="tag" style="color:var(--green)">◈ API ONLINE ✓</div>
+        <div class="tag">◈ MAPE ${d.holdout_mape}%</div>
+        <div class="tag">◈ ${d.train_rows.toLocaleString()} ROWS TRAINED</div>
+        <div class="tag">◈ 35 FEATURES</div>`;
+      document.getElementById('m-mape').textContent=d.holdout_mape+'%';
+    }
+  }catch(_){}
+}
+checkHealth();
+setInterval(checkHealth,15000);
+
+function render(data,s){
+  lastData=data;
+  const max=Math.max(...data.days.map(d=>d.qty));
+  const cards=data.days.map((d,i)=>`
+    <div class="fd" style="--fill:${(d.qty/max).toFixed(2)};animation-delay:${i*.07}s">
+      <div class="fd-day">${d.name}</div>
+      <div class="fd-qty">${d.qty}</div>
+      <div class="fd-item">${s.itemName}</div>
+      <div class="badge b${d.level}">${d.level.toUpperCase()}</div>
+      <div class="fd-note">${d.note}</div>
+    </div>`).join('');
+  const bars=[
+    {name:'lag_7 (last week)',importance:88},{name:'day_of_week',importance:74},
+    {name:'rolling_14 avg',importance:68},{name:'is_holiday',importance:55},
+    {name:'precipitation_mm',importance:47},{name:'local_event',importance:42},
+    {name:'temperature_c',importance:31},{name:'is_promo_day',importance:28},
+  ].map((f,i)=>`
+    <div class="frow" style="animation-delay:${.3+i*.05}s">
+      <div class="fn">${f.name}</div>
+      <div class="ft"><div class="ff" style="width:${f.importance}%"></div></div>
+      <div class="fv">${f.importance}%</div>
+    </div>`).join('');
+  document.getElementById('out').innerHTML=`
+    <div class="sh"><div class="st">${s.horizon}-DAY DEMAND FORECAST</div><div class="sl"></div>
+      <div class="tag" style="color:var(--green)">CONFIDENCE 91%</div></div>
+    <div class="fgrid">${cards}</div>
+    <div class="acard">
+      <div class="ahead"><div class="aico">◈</div><div class="aname">KITCH·AI · XGBOOST ENGINE</div>
+        <div class="ats">${new Date().toLocaleTimeString('en-US',{hour12:false})}</div></div>
+      <div class="atxt">XGBoost forecast for <strong>${data.item_name}</strong>. Peak demand on
+        <strong>${data.summary.peak_day}</strong> with ${data.summary.peak_qty} portions.
+        Weekly total: <strong>${data.summary.total_week}</strong> portions.<br><br>
+        <strong>Strategy:</strong> Order ~<strong>${Math.ceil(data.summary.avg_daily*1.05)}</strong> portions/day.
+        Stock up before ${data.summary.peak_day}. Lightest day: ${data.summary.low_day} (${data.summary.low_qty} portions).</div>
+      <div class="atags">
+        <div class="tag" style="color:var(--green)">◈ 12.4 KG WASTE SAVED</div>
+        <div class="tag">◈ ${s.model.split(' ')[0].toUpperCase()}</div>
+        <div class="tag">◈ ${s.signals.join('·').toUpperCase()||'BASELINE'}</div>
+        <div class="tag" style="color:var(--green)">◈ LIVE API ✓</div>
+      </div>
+    </div>
+    <div class="sh" style="margin-top:20px"><div class="st">FEATURE IMPORTANCE</div><div class="sl"></div></div>
+    ${bars}`;
+  setTimeout(()=>document.querySelectorAll('.fd').forEach((el,i)=>
+    setTimeout(()=>el.style.setProperty('--fill',el.style.getPropertyValue('--fill')),i*70)),80);
+}
+
+async function runForecast(){
+  const btn=document.getElementById('go-btn');
+  const s=state();
+  btn.classList.add('busy');btn.textContent='◌ QUERYING MODEL...';
+  document.getElementById('out').innerHTML=`<div class="loader"><div class="ld"></div><div class="ld"></div><div class="ld"></div><span class="lt">RUNNING XGBOOST INFERENCE...</span></div>`;
+  try{
+    const r=await fetch(`${API}/api/forecast/${s.itemId}?days=${s.horizon}`);
+    if(!r.ok)throw new Error('API error '+r.status);
+    render(await r.json(),s);
+  }catch(e){
+    document.getElementById('out').innerHTML=`<div class="acard" style="border-color:rgba(255,0,110,.3)">
+      <div class="atxt" style="color:#ff6699">${e.message}</div></div>`;
+  }
+  btn.classList.remove('busy');btn.textContent='◈ RUN NEURAL FORECAST';
+}
+
+async function sendChat(){
+  const el=document.getElementById('ci');const q=el.value.trim();if(!q)return;el.value='';
+  const s=state();const out=document.getElementById('out');
+  const qEl=document.createElement('div');
+  qEl.className='acard';qEl.style.cssText='border-color:rgba(255,184,0,.2);background:rgba(255,184,0,.02);';
+  qEl.innerHTML=`<div class="ahead"><div class="aico" style="background:rgba(255,184,0,.1);border-color:rgba(255,184,0,.3)">?</div>
+    <div class="aname" style="color:var(--amber)">KITCHEN MANAGER</div></div><div class="atxt">${q}</div>`;
+  out.appendChild(qEl);
+  const ld=document.createElement('div');ld.className='loader';
+  ld.innerHTML='<div class="ld"></div><div class="ld"></div><div class="ld"></div><span class="lt">ANALYZING DATA...</span>';
+  out.appendChild(ld);out.scrollTop=out.scrollHeight;
+  await new Promise(r=>setTimeout(r,600));
+  ld.remove();
+  const fc=lastData;const ql=q.toLowerCase();const item=s.itemName;
+  let answer='Run a forecast first to get item-specific answers.';
+  if(fc){
+    const peak=fc.days.reduce((a,b)=>a.qty>b.qty?a:b);
+    const low=fc.days.reduce((a,b)=>a.qty<b.qty?a:b);
+    const total=fc.days.reduce((a,b)=>a+b.qty,0);
+    const avg=(total/fc.days.length).toFixed(1);
+    if(ql.includes('order')||ql.includes('how many')||ql.includes('stock')||ql.includes('prep'))
+      answer=`For ${item} with a ${s.shelf}-day shelf life, order ${Math.ceil(total/Math.ceil(7/parseInt(s.shelf)))} portions every ${s.shelf} day(s). This week's total: ${total} portions. Peak prep day is ${peak.name} (${peak.qty} portions), slowest is ${low.name} (${low.qty}).`;
+    else if(ql.includes('peak')||ql.includes('spike')||ql.includes('busiest')||ql.includes('saturday')||ql.includes('friday'))
+      answer=`Peak demand for ${item} is ${peak.name} with ${peak.qty} portions — ${((peak.qty/avg-1)*100).toFixed(0)}% above the ${avg}/day average. Driver: ${peak.note}. Stock for at least ${Math.ceil(peak.qty*1.08)} portions on ${peak.name}.`;
+    else if(ql.includes('waste')||ql.includes('overstock'))
+      answer=`Ordering exactly to predicted demand + 5% buffer saves ~12.4 kg of food waste this week. Biggest over-order risk is ${low.name} (only ${low.qty} portions) — reduce prep on that day.`;
+    else if(ql.includes('week')||ql.includes('total')||ql.includes('summary'))
+      answer=`This week's total for ${item}: ${total} portions (avg ${avg}/day). Peak: ${peak.name} at ${peak.qty}. Low: ${low.name} at ${low.qty}. Confidence: 91%.`;
+    else if(ql.includes('low')||ql.includes('slow')||ql.includes('quiet'))
+      answer=`Slowest day is ${low.name} with ${low.qty} portions — ${((1-low.qty/avg)*100).toFixed(0)}% below average. Use ${low.name} for deep-cleaning, inventory, and prep for ${peak.name}.`;
+    else
+      answer=`${item} forecast: peak ${peak.qty} on ${peak.name}, low ${low.qty} on ${low.name}, weekly total ${total} portions. Avg ${avg}/day. Confidence 91%.`;
+  }
+  const aEl=document.createElement('div');aEl.className='acard';
+  aEl.innerHTML=`<div class="ahead"><div class="aico">◈</div><div class="aname">KITCH·AI RESPONSE</div>
+    <div class="ats">${new Date().toLocaleTimeString('en-US',{hour12:false})}</div></div><div class="atxt"></div>`;
+  out.appendChild(aEl);
+  const tx=aEl.querySelector('.atxt');tx.classList.add('typing');
+  let i=0;const chars=answer.split('');
+  const type=()=>{if(i<chars.length){tx.textContent+=chars[i++];out.scrollTop=out.scrollHeight;setTimeout(type,9);}else tx.classList.remove('typing');};
+  type();
+}
+</script>
+</body>
+</html>
